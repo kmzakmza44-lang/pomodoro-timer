@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        @media (max-width: 600px) {
+            .top {
+                gap: 20px;
+                flex-direction: column;
+            }
+            .top .topitems {
+                gap: 10px;
+            }
+        }
+        :root {
+            --main-color: #000000;
+            --text-color: white;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Inter, system-ui, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #ffffff;
+
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 13px 32px 32px;
+
+            position: relative;
+        }
+        body::before,
+        body::after {
+            content: "";
+
+            position: fixed;
+            inset: 0;
+
+            z-index: -1;
+
+            transition: opacity 5s ease;
+        }
+        body::before {
+            background:
+            radial-gradient(circle at top, rgba(255,255,255,0.12), transparent 28%),
+            linear-gradient(180deg, #00d0ff 0%, #ff02e6 100%);
+
+            opacity: 1;
+        }
+        body.short-mode::before {
+            background:
+            radial-gradient(circle at top, rgba(255,255,255,0.12), transparent 28%),
+            linear-gradient(180deg, #43cea2 0%, #185a9d 100%);
+        }
+
+        body.long-mode::before {
+            background:
+            radial-gradient(circle at top, rgba(255,255,255,0.12), transparent 28%),
+            linear-gradient(180deg, #4568dc 0%, #b06ab3 100%);
+        }
+        * {
+            box-sizing: border-box;
+        }
+        .page {
+            width: min(640px, 100%);
+            align-items: center;
+
+            transition: max-width 0.3s ease;
+            max-width: 640px;
+        }
+        .page-expanded {
+            max-width: 900px;
+        }
+        .top {
+            display : flex;
+            align-items: center;
+            justify-content: center;
+            gap: 250px;
+            padding-bottom: 12px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+        }
+        .top .topitems {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .top .top-btn {
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: #96d1df;
+            color: var(--text-color);
+            padding: 12px 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        .top .top-btn:hover {
+            background: var(--text-color);
+            color: var(--main-color);
+        }
+        .main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 30px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 16px;
+        }
+        .active-btn {
+            border: 0;
+            background: transparent;
+            border-radius: 10px;
+            color: var(--text-color);
+            padding: 10px 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+
+            transition: all 0.25s ease;
+        }
+        .main-btn {
+            border: 0;
+            background: transparent;
+            border-radius: 10px;
+            color: var(--text-color);
+            padding: 10px 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+
+            transition: all 0.25s ease;
+        }
+        .mode-active {
+            background: rgba(255,255,255,0.22);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .timer-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin: 18px auto 0;
+        }
+        .display h1 {
+            font-size: 100px;
+            margin: 0 0 5px;
+            font-family: 'Poppins', sans-serif;
+        }
+        .start-btn {
+            background: #f4f4f4;
+            color: #675858;
+            font-size: 38px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.12);
+            transition: all 0.15s ease;
+        }
+        .start-btn:hover {
+            transform: translateY(-2px);
+        }
+        .start-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
+        }
+        .next-btn {
+            min-width: 70px;
+            height: 40px;
+            border: none;
+            background: #f4f4f4;
+            color: #675858;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 12px;
+            padding: 0 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+            display: none;
+        }
+        .next-btn:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.08);
+        }
+        .next-btn.visible {
+            display: block;
+        }
+        .bottom-section {
+            display: flex;
+            flex-direction: column;
+            margin-top: 20px;
+            align-items: center;
+        }
+        .status-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .status-box span {
+            font-size: 17px;
+            color: var(--text-color);
+            opacity: 0.8;
+            margin-bottom: 4px;
+        }
+        .status-box strong {
+            font-size: 18px;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+        .tasks-area {
+            max-width: 500px;
+            width: 100%;
+        }
+        .task-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        .task-top h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            letter-spacing: 0.01em;
+        }
+        .dots-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+        .dots-btn:hover {
+            color: var(--main-color);
+        }
+        .line {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.707);
+            margin: 12px 0;
+        }
+        .task-box {
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .task-popup {
+            width: 100%;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 22px;
+            margin-bottom: 14px;
+
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+
+            animation: popup 0.2s ease;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @keyframes popup {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .popup-task-input {
+            border: none;
+            outline: none;
+            font-size: 30px;
+            font-style: italic;
+            font-weight: 700;
+            color: #555;
+        }
+
+        .popup-task-input::placeholder {
+            color: #c8c8c8;
+        }
+
+        .pomodoro-count label {
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+            font-weight: 700;
+        }
+
+        .counter {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .count-input {
+            width: 80px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #efefef;
+            font-size: 24px;
+        }
+
+        .counter-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .counter-buttons button {
+            border: none;
+            background: #f1f1f1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .popup-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+
+            padding-top: 18px;
+            border-top: 1px solid #ddd;
+        }
+
+        .cancel-popup-btn,
+        .save-popup-btn {
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .cancel-popup-btn {
+            background: transparent;
+            color: #777;
+        }
+
+        .save-popup-btn {
+            background: #4d5057;
+            color: white;
+        }
+
+        .task-card {
+            background: #ffffffd9;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: box-shadow 0.2s ease;
+            position: relative;
+        }
+
+        .task-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .task-card.active {
+            border-left: 4px solid #4d5057;
+            padding-left: 12px;
+        }
+
+        .task-card.completed {
+            opacity: 0.7;
+        }
+
+        .task-card.completed .task-card-content h3 {
+            text-decoration: line-through;
+        }
+
+        .task-card-left-bar {
+            width: 4px;
+            height: 50px;
+            background: #4d5057;
+            border-radius: 2px;
+            display: none;
+        }
+
+        .task-card.active .task-card-left-bar {
+            display: block;
+        }
+
+        .task-card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .task-card-content h3 {
+            margin: 0;
+            color: #333;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .task-progress {
+            color: #999;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .task-completed-label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(41, 167, 93, 0.12);
+            color: #2b8a3e;
+            font-weight: 600;
+            font-size: 12px;
+            border-radius: 999px;
+            padding: 6px 10px;
+            min-height: 28px;
+        }
+
+        .task-dots-btn {
+            background: transparent;
+            border: none;
+            color: #999;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+            transition: color 0.2s;
+        }
+
+        .task-dots-btn:hover {
+            color: #333;
+        }
+
+        .break-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .break-modal {
+            width: min(420px, 100%);
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 18px;
+            padding: 28px 24px;
+            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.18);
+            text-align: center;
+        }
+
+        .break-modal h3 {
+            margin: 0 0 12px;
+            font-size: 1.25rem;
+            color: #18213f;
+        }
+
+        .break-modal p {
+            margin: 0 0 22px;
+            color: #444;
+            line-height: 1.5;
+        }
+
+        .break-modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .break-modal button {
+            border: none;
+            border-radius: 10px;
+            padding: 12px 18px;
+            font-weight: 700;
+            cursor: pointer;
+            min-width: 130px;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .break-modal button:hover {
+            transform: translateY(-1px);
+        }
+
+        .break-modal .short-break-btn {
+            background: #5aaae0;
+            color: white;
+        }
+
+        .break-modal .long-break-btn {
+            background: #8c5ae0;
+            color: white;
+        }
+
+        .delete-popup-btn {
+            background: transparent;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+        }
+
+        .delete-popup-btn:hover {
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header class="top">
+            <div style="font-weight: 700; display: inline-flex; align-items: center; font-size: 25px;">Timer</div>
+            <div class="topitems">
+                <button type="button" class="top-btn">Report</button>
+                <button type="button" class="top-btn">Setting</button>
+                <button type="button" class="top-btn">Sign In</button>
+            </div> 
+        </header>
+        <main class="main">
+            <div style="flex-wrap: wrap; display: flex; gap: 40px; margin-bottom: 8px;">
+                <button type="button" class="active-btn">Pomodoro</button>
+                <button type="button" class="main-btn">Short Break</button>
+                <button type="button" class="main-btn">Long Break</button>
+            </div>
+            <div class="display">
+                <h1>25:00</h1>
+                <div class="timer-controls">
+                    <button type="button" class="start-btn">Start</button>
+                    <button type="button" class="next-btn">Next</button>
+                </div>
+            </div>
+        </main>
+        <section class="bottom-section">
+            <div class="status-box">
+                <span>#1</span>
+                <strong>Time to focus!</strong>
+            </div>
+            <div class="tasks-area">
+                <div class="task-top">
+                    <h2>Tasks</h2>
+                    <button class="dots-btn">⋮</button>
+                </div>
+                <div class="line"></div>
+                <div class="task-box">
+                    <img src="plus-circle-white.png" alt="plus circle white" class="plus-icon" style="width: 20px; height: 20px;">
+                    <strong>Add Task</strong>
+                </div>
+            </div>
+        </section>
+        <div class="task-list"></div>
+        <div class="task-popup hidden">
+            <input type="text" placeholder="What are you working on?" class="popup-task-input">
+
+            <div class="pomodoro-count">
+                <label>Est Pomodoros</label>
+
+                <div class="counter">
+                    <input type="number" value="1" min="1" class="count-input">
+
+                    <div class="counter-buttons">
+                        <button class="up-btn">▲</button>
+                        <button class="down-btn">▼</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="popup-footer">
+                <button class="cancel-popup-btn">Cancel</button>
+                <button class="save-popup-btn">Save</button>
+            </div>
+        </div>
+
+        <div class="break-modal-overlay hidden">
+            <div class="break-modal">
+                <h3>Pomodoro Finished</h3>
+                <p>Take a break before updating task progress. Choose the break type to continue.</p>
+                <div class="break-modal-buttons">
+                    <button type="button" class="short-break-btn">Short Break</button>
+                    <button type="button" class="long-break-btn">Long Break</button>
+                </div>
+            </div>
+        </div>
+        <script src="script.js"></script>
+    </div>
+</body>
+</html>
