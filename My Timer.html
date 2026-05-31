@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        @media (max-width: 600px) {
+            .top {
+                gap: 20px;
+                flex-direction: column;
+            }
+            .top .topitems {
+                gap: 10px;
+            }
+        }
+        /* Variables */
+        :root {
+            --main-color: #000000;
+            --text-color: white;
+        }
+        /* Layout */
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Inter, system-ui, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #ffffff;
+
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 13px 32px 32px;
+
+            position: relative;
+        }
+        body::before,
+        body::after {
+            content: "";
+
+            position: fixed;
+            inset: 0;
+
+            z-index: -1;
+
+            transition: opacity 5s ease;
+        }
+        body::before {
+            background:
+            radial-gradient(circle at top, rgba(255,255,255,0.12), transparent 28%),
+            linear-gradient(180deg, #00d0ff 0%, #ff02e6 100%);
+
+            opacity: 1;
+        }
+        body.short-mode::before {
+            background:
+            radial-gradient(circle at top, rgba(255,255,255,0.12), transparent 28%),
+            linear-gradient(180deg, #43cea2 0%, #185a9d 100%);
+        }
+
+        body.long-mode::before {
+            background:
+            radial-gradient(circle at top, rgba(255,255,255,0.12), transparent 28%),
+            linear-gradient(180deg, #4568dc 0%, #b06ab3 100%);
+        }
+        * {
+            box-sizing: border-box;
+        }
+        .page {
+            width: min(640px, 100%);
+            align-items: center;
+
+            transition: max-width 0.3s ease;
+            max-width: 640px;
+        }
+        .page-expanded {
+            max-width: 900px;
+        }
+        /* Header */
+        .top {
+            display : flex;
+            align-items: center;
+            justify-content: center;
+            gap: 250px;
+            padding-bottom: 12px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+        }
+        .plus-icon {
+            width: 20px;
+            height: 20px;
+        }
+        .timer-modes {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .top .topitems {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        /* Buttons */
+        .top .top-btn {
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.18);
+            color: var(--text-color);
+            padding: 12px 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+        body:not(.short-mode):not(.long-mode) .top-btn {
+            background: rgba(255, 255, 255, 0.22);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        body.short-mode .top-btn {
+            background: rgba(172, 235, 235, 0.22);
+            border-color: rgba(172, 235, 235, 0.45);
+            color: #f8fcff;
+        }
+        body.long-mode .top-btn {
+            background: rgba(215, 185, 242, 0.22);
+            border-color: rgba(215, 185, 242, 0.45);
+            color: #fbf7ff;
+        }
+        .top .top-btn:hover {
+            background: rgba(255, 255, 255, 0.95);
+            color: var(--main-color);
+        }
+        /* Report Page */
+        .report-page {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.3s ease;
+        }
+        .report-shell {
+            width: min(950px, 90vw);
+            max-height: 90vh;
+            overflow-y: auto;
+            background: rgba(30, 29, 29, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            padding-top: 0;
+            padding-left: 32px;
+            padding-right: 32px;
+            padding-bottom: 32px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .report-header {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 0;
+            position: sticky;
+            top: 0;
+            background: transparent;
+            padding: 12px 0 10px;
+            margin: -32px -32px 14px -32px;
+            padding-left: 32px;
+            padding-right: 32px;
+            z-index: 10;
+            backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .report-header-buttons {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .report-hero {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            padding-bottom: 18px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .report-hero-icon {
+            width: 72px;
+            height: 72px;
+            min-width: 72px;
+            border-radius: 20px;
+            display: grid;
+            place-items: center;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
+        }
+        .report-hero-icon img {
+            width: 58%;
+            height: 58%;
+            object-fit: contain;
+        }
+        .report-hero-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .report-badge {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.65);
+            letter-spacing: 0.18em;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+        }
+        .report-title {
+            margin: 0;
+            font-size: clamp(1.7rem, 2.2vw, 2.4rem);
+            line-height: 1.05;
+            color: white;
+        }
+        .report-subtitle {
+            margin: 0;
+            max-width: 520px;
+            color: rgba(255, 255, 255, 0.72);
+            font-size: 0.98rem;
+            line-height: 1.6;
+        }
+        /* Reusable Button Styles */
+        .btn-base {
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 10px 16px;
+        }
+        .btn-secondary {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.06);
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        .btn-danger {
+            border: 1px solid rgba(255, 100, 100, 0.4);
+            background: rgba(255, 100, 100, 0.08);
+            color: #ff6464;
+        }
+        .btn-danger:hover {
+            background: rgba(255, 100, 100, 0.12);
+            transform: translateY(-1px);
+            border-color: rgba(255, 100, 100, 0.5);
+        }
+        .clear-report-btn {
+            border: 1px solid rgba(255, 100, 100, 0.4);
+            background: rgba(0, 0, 0, 0.5);
+            color: #ff6464;
+            padding: 12px 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .clear-report-btn:hover {
+            background: rgba(255, 100, 100, 0.12);
+            transform: translateY(-1px);
+            border-color: rgba(255, 100, 100, 0.5);
+        }
+        .report-close-btn {
+            position: static;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .report-close-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        /* Cards */
+        .report-cards {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+        }
+        .report-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 20px;
+            min-height: 140px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+        }
+        .report-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+        }
+        .card-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            min-height: 48px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(8px);
+            transition: all 0.25s ease;
+        }
+        .card-icon img {
+            width: 65%;
+            height: 65%;
+            object-fit: contain;
+        }
+        .clipboard-icon {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+        }
+        .report-card:hover .card-icon {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .card-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .report-card strong {
+            display: block;
+            margin-top: 6px;
+            font-size: 1.8rem;
+            color: white;
+        }
+        .report-layout {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 20px;
+        }
+        .report-layout--secondary,
+        .report-layout--tertiary {
+            grid-template-columns: 1.2fr 0.8fr;
+        }
+        .report-block {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(12px);
+        }
+        .block-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+        .block-header p {
+            margin: 0 0 6px;
+            color: #a0b0ff;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.2em;
+            opacity: 0.8;
+        }
+        .block-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: white;
+        }
+        .chart-card,
+        .analytics-card {
+            width: 100%;
+            min-height: 300px;
+            padding: 16px;
+            border-radius: 18px;
+            background: rgba(15, 15, 25, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .heatmap-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .heatmap-nav-btn {
+            border: none;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            transition: background 0.2s ease;
+            font-size: 1rem;
+        }
+        .heatmap-nav-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .heatmap-month-year {
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .heatmap-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .heatmap-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 8px;
+            padding: 0 1px;
+        }
+        .heatmap-weekdays span {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        /* Heatmap */
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 8px;
+            padding: 8px 1px 1px;
+        }
+        .heatmap-day {
+            aspect-ratio: 1 / 1;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            color: transparent;
+            font-size: 0.7rem;
+            position: relative;
+            font-weight: 500;
+        }
+        .heatmap-day:hover {
+            transform: translateY(-1px);
+            color: white;
+        }
+        .heatmap-day.future {
+            opacity: 0.3;
+        }
+        .heatmap-day.empty {
+            background: transparent !important;
+            color: transparent;
+        }
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .insight-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 16px;
+            color: rgba(255, 255, 255, 0.9);
+            min-height: 90px;
+            display: flex;
+            align-items: flex-start;
+            transition: all 0.2s ease;
+        }
+        .insight-card:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 320px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .session-item {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            padding: 12px 14px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 10px;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+        .session-item:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .session-status {
+            font-size: 0.85rem;
+            color: #a0b0ff;
+            font-weight: 700;
+        }
+        .session-label,
+        .session-time {
+            color: rgba(255, 255, 255, 0.86);
+        }
+        .streak-card {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            padding: 20px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+        }
+        .streak-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 20px;
+            display: grid;
+            place-items: center;
+            background: radial-gradient(circle, rgba(255, 135, 95, 0.2), rgba(255, 78, 128, 0.1));
+            font-size: 1.8rem;
+        }
+        .streak-card h4,
+        .streak-card p {
+            margin: 0;
+            color: white;
+        }
+        .streak-card h4 {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+        }
+        .report-page.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .report-page.hidden .report-shell {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        /* Responsive */
+        @media (max-width: 1040px) {
+            .report-cards,
+            .report-layout,
+            .report-layout--secondary,
+            .report-layout--tertiary {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 720px) {
+            .report-shell {
+                width: 95vw;
+                padding-top: 0;
+                padding-left: 20px;
+                padding-right: 20px;
+                padding-bottom: 24px;
+                max-height: 95vh;
+            }
+            .report-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 16px;
+                margin: -20px -20px 8px -20px;
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+            .report-header-buttons {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            .report-hero {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 14px;
+            }
+            .report-hero-icon {
+                margin: 0;
+            }
+            .report-cards {
+                grid-template-columns: 1fr;
+            }
+            .insights-grid,
+            .heatmap-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .heatmap-grid {
+                gap: 6px;
+            }
+        }
+        @media (max-width: 520px) {
+            .report-shell {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+            .report-header {
+                margin: -16px -16px 8px -16px;
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+            .insights-grid,
+            .heatmap-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 30px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 16px;
+        }
+        .active-btn {
+            border: 0;
+            background: transparent;
+            border-radius: 10px;
+            color: var(--text-color);
+            padding: 10px 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+
+            transition: all 0.25s ease;
+        }
+        .main-btn {
+            border: 0;
+            background: transparent;
+            border-radius: 10px;
+            color: var(--text-color);
+            padding: 10px 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+
+            transition: all 0.25s ease;
+        }
+        .mode-active {
+            background: rgba(255,255,255,0.22);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        /* Timer */
+        .display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .timer-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin: 18px auto 0;
+        }
+        .display h1 {
+            font-size: 100px;
+            margin: 0 0 5px;
+            font-family: 'Poppins', sans-serif;
+        }
+        .start-btn {
+            background: #f4f4f4;
+            color: #675858;
+            font-size: 38px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.12);
+            transition: all 0.15s ease;
+        }
+        .start-btn:hover {
+            transform: translateY(-2px);
+        }
+        .start-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
+        }
+        .next-btn {
+            min-width: 70px;
+            height: 40px;
+            border: none;
+            background: #f4f4f4;
+            color: #675858;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 12px;
+            padding: 0 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+            display: none;
+        }
+        .next-btn:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.08);
+        }
+        .next-btn.visible {
+            display: block;
+        }
+        .bottom-section {
+            display: flex;
+            flex-direction: column;
+            margin-top: 20px;
+            align-items: center;
+        }
+        .status-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .status-box span {
+            font-size: 17px;
+            color: var(--text-color);
+            opacity: 0.8;
+            margin-bottom: 4px;
+        }
+        .status-box strong {
+            font-size: 18px;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+        /* Tasks */
+        .tasks-area {
+            max-width: 500px;
+            width: 100%;
+        }
+        .task-top {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        .task-top h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            letter-spacing: 0.01em;
+        }
+        .dots-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+        .dots-btn:hover {
+            color: var(--main-color);
+        }
+        .task-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: 220px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.12);
+            padding: 8px 0;
+            z-index: 50;
+        }
+        .task-menu-item {
+            width: 100%;
+            border: none;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: #3a3a3a;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .task-menu-item:hover {
+            background: rgba(0, 0, 0, 0.04);
+        }
+        .task-menu-item img {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+        }
+        .line {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.707);
+            margin: 12px 0;
+        }
+        .task-box {
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .task-popup {
+            width: 100%;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 22px;
+            margin-bottom: 14px;
+
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+
+            animation: popup 0.2s ease;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @keyframes popup {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .popup-task-input {
+            border: none;
+            outline: none;
+            font-size: 30px;
+            font-style: italic;
+            font-weight: 700;
+            color: #555;
+        }
+
+        .popup-task-input::placeholder {
+            color: #c8c8c8;
+        }
+
+        .pomodoro-count label {
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+            font-weight: 700;
+        }
+
+        .counter {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .count-input {
+            width: 80px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #efefef;
+            font-size: 24px;
+        }
+
+        .counter-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .counter-buttons button {
+            border: none;
+            background: #f1f1f1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .popup-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+
+            padding-top: 18px;
+            border-top: 1px solid #ddd;
+        }
+
+        .cancel-popup-btn,
+        .save-popup-btn {
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .cancel-popup-btn {
+            background: transparent;
+            color: #777;
+        }
+
+        .save-popup-btn {
+            background: #4d5057;
+            color: white;
+        }
+
+        .task-card {
+            background: #ffffffd9;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: box-shadow 0.2s ease;
+            position: relative;
+        }
+
+        .task-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .task-card.active {
+            border-left: 4px solid #4d5057;
+            padding-left: 12px;
+        }
+
+        .task-card.completed {
+            opacity: 0.7;
+        }
+
+        .task-card.completed .task-card-content h3 {
+            text-decoration: line-through;
+        }
+
+        .task-card-left-bar {
+            width: 4px;
+            height: 50px;
+            background: #4d5057;
+            border-radius: 2px;
+            display: none;
+        }
+
+        .task-card.active .task-card-left-bar {
+            display: block;
+        }
+
+        .task-card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .task-card-content h3 {
+            margin: 0;
+            color: #333;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .task-progress {
+            color: #999;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .task-completed-label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(41, 167, 93, 0.12);
+            color: #2b8a3e;
+            font-weight: 600;
+            font-size: 12px;
+            border-radius: 999px;
+            padding: 6px 10px;
+            min-height: 28px;
+        }
+
+        .task-dots-btn {
+            background: transparent;
+            border: none;
+            color: #999;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+            transition: color 0.2s;
+        }
+
+        .task-dots-btn:hover {
+            color: #333;
+        }
+
+        .break-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .break-modal {
+            width: min(420px, 100%);
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 18px;
+            padding: 28px 24px;
+            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.18);
+            text-align: center;
+        }
+
+        .break-modal h3 {
+            margin: 0 0 12px;
+            font-size: 1.25rem;
+            color: #18213f;
+        }
+
+        .break-modal p {
+            margin: 0 0 22px;
+            color: #444;
+            line-height: 1.5;
+        }
+
+        .break-modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .break-modal button {
+            border: none;
+            border-radius: 10px;
+            padding: 12px 18px;
+            font-weight: 700;
+            cursor: pointer;
+            min-width: 130px;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .break-modal button:hover {
+            transform: translateY(-1px);
+        }
+
+        .break-modal .short-break-btn {
+            background: #5aaae0;
+            color: white;
+        }
+
+        .break-modal .long-break-btn {
+            background: #8c5ae0;
+            color: white;
+        }
+
+        .delete-popup-btn {
+            background: transparent;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+        }
+
+        .delete-popup-btn:hover {
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header class="top">
+            <div class="logo">Timer</div>
+            <div class="topitems">
+                <button type="button" class="top-btn report-btn">Report</button>
+                <button type="button" class="top-btn">Setting</button>
+                <button type="button" class="top-btn">Sign In</button>
+            </div>
+        </header>
+        <main class="main">
+            <div class="timer-modes">
+                <button type="button" class="active-btn">Pomodoro</button>
+                <button type="button" class="main-btn">Short Break</button>
+                <button type="button" class="main-btn">Long Break</button>
+            </div>
+            <div class="display">
+                <h1>25:00</h1>
+                <div class="timer-controls">
+                    <button type="button" class="start-btn">Start</button>
+                    <button type="button" class="next-btn">Finish</button>
+                </div>
+            </div>
+        </main>
+        <section class="bottom-section">
+            <div class="status-box">
+                <span>#1</span>
+                <strong>Time to focus!</strong>
+            </div>
+            <div class="tasks-area">
+                <div class="task-top">
+                    <h2>Tasks</h2>
+                    <button class="dots-btn" type="button">⋮</button>
+                    <div class="task-menu hidden" id="task-menu">
+                        <button type="button" class="task-menu-item" data-action="clear-finished">
+                            <img src="delete-black.png" alt="Delete icon">
+                            <span>Clear finished tasks</span>
+                        </button>
+                        <button type="button" class="task-menu-item" data-action="clear-all">
+                            <img src="delete-black.png" alt="Delete icon">
+                            <span>Clear all tasks</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="line"></div>
+                <div class="task-box">
+                    <img src="plus-circle-white.png" alt="plus circle white" class="plus-icon">
+                    <strong>Add Task</strong>
+                </div>
+            </div>
+        </section>
+        <div class="task-list"></div>
+        <div class="task-popup hidden">
+            <input type="text" placeholder="What are you working on?" class="popup-task-input">
+
+            <div class="pomodoro-count">
+                <label>Est Pomodoros</label>
+
+                <div class="counter">
+                    <input type="number" value="1" min="1" class="count-input">
+
+                    <div class="counter-buttons">
+                        <button class="up-btn">▲</button>
+                        <button class="down-btn">▼</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="popup-footer">
+                <button class="cancel-popup-btn">Cancel</button>
+                <button class="save-popup-btn">Save</button>
+            </div>
+        </div>
+
+        <div class="break-modal-overlay hidden">
+            <div class="break-modal">
+                <h3>Pomodoro Finished</h3>
+                <p>Take a break before updating task progress. Choose the break type to continue.</p>
+                <div class="break-modal-buttons">
+                    <button type="button" class="short-break-btn">Short Break</button>
+                    <button type="button" class="long-break-btn">Long Break</button>
+                </div>
+            </div>
+        </div>
+
+        <section class="report-page hidden" id="report-page">
+            <div class="report-shell">
+                <div class="report-header">
+                    <div class="report-header-buttons">
+                        <button type="button" class="clear-report-btn">Clear Report</button>
+                        <button type="button" class="report-close-btn">Close</button>
+                    </div>
+                </div>
+
+                <div class="report-hero">
+                    <span class="report-hero-icon">
+                        <img src="minimal%20analytics%20icon%20png.png" alt="Analytics icon">
+                    </span>
+                    <div class="report-hero-copy">
+                        <p class="report-badge">Productivity report</p>
+                        <h2 class="report-title">Focus insights & progress</h2>
+                        
+                    </div>
+                </div>
+
+                <div class="report-cards">
+                    <article class="report-card">
+                        <div class="card-meta">
+                            <span class="card-icon">
+                                <img src="minimal%20hourglass%20png%20white.png" alt="Hourglass icon">
+                            </span>
+                            <span class="card-label">Total Focus Time</span>
+                        </div>
+                        <strong id="report-focus-time">0m</strong>
+                    </article>
+                    <article class="report-card">
+                        <div class="card-meta">
+                            <span class="card-icon">
+                                <img src="minimal%20lightning%20bolt%20png%20white.png" alt="Lightning icon">
+                            </span>
+                            <span class="card-label">Pomodoros Completed</span>
+                        </div>
+                        <strong id="report-pomodoro-count">0</strong>
+                    </article>
+                    <article class="report-card">
+                        <div class="card-meta">
+                            <span class="card-icon">
+                                <img src="minimal%20clipboard%20check%20png%20white.png" alt="Clipboard icon" class="clipboard-icon">
+                            </span>
+                            <span class="card-label">Completed Tasks</span>
+                        </div>
+                        <strong id="report-tasks-completed">0</strong>
+                    </article>
+                    <article class="report-card">
+                        <div class="card-meta">
+                            <span class="card-icon">
+                                <img src="minimal%20flame%20png%20white.png" alt="Flame icon">
+                            </span>
+                            <span class="card-label">Current Streak</span>
+                        </div>
+                        <strong id="report-current-streak">0 days</strong>
+                    </article>
+                </div>
+
+                <div class="report-layout">
+                    <section class="report-block report-graph-block">
+                        <div class="block-header">
+                            <div>
+                                <p>Weekly focus</p>
+                                <h3>Minutes of focus per day</h3>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <canvas id="weekly-focus-chart"></canvas>
+                        </div>
+                    </section>
+
+                    <section class="report-block report-heatmap-block">
+                        <div class="block-header">
+                            <div>
+                                <p>Monthly heatmap</p>
+                                <h3>Daily focus intensity</h3>
+                            </div>
+                            <div class="heatmap-controls">
+                                <button class="heatmap-nav-btn" id="prev-month">&lt;</button>
+                                <span class="heatmap-month-year" id="heatmap-month-year">April 2026</span>
+                                <button class="heatmap-nav-btn" id="next-month">&gt;</button>
+                            </div>
+                        </div>
+                        <div class="heatmap-container">
+                            <div class="heatmap-weekdays">
+                                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                            </div>
+                            <div class="heatmap-grid" id="report-heatmap"></div>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="report-layout report-layout--secondary">
+                    <section class="report-block report-insights-block">
+                        <div class="block-header">
+                            <div>
+                                <p>Productivity insights</p>
+                                <h3>Smart session analysis</h3>
+                            </div>
+                        </div>
+                        <div class="insights-grid">
+                            <div class="insight-card" id="insight-most-productive">You focused most on Monday.</div>
+                            <div class="insight-card" id="insight-average-session">Your average session is 25 minutes.</div>
+                            <div class="insight-card" id="insight-month-hours">This month you focused 0 hours.</div>
+                            <div class="insight-card" id="insight-completion">Completion percentage is 0%.</div>
+                        </div>
+                    </section>
+
+                    <section class="report-block report-history-block">
+                        <div class="block-header">
+                            <div>
+                                <p>Session history</p>
+                                <h3>Latest focus and break sessions</h3>
+                            </div>
+                        </div>
+                        <div class="history-list" id="session-history"></div>
+                    </section>
+                </div>
+
+                <div class="report-layout report-layout--tertiary">
+                    <section class="report-block report-analytics-block">
+                        <div class="block-header">
+                            <div>
+                                <p>Task analytics</p>
+                                <h3>Task completion overview</h3>
+                            </div>
+                        </div>
+                        <div class="analytics-card">
+                            <canvas id="task-analytics-chart"></canvas>
+                        </div>
+                    </section>
+
+                    <section class="report-block report-streak-block">
+                        <div class="block-header">
+                            <div>
+                                <p>Streak system</p>
+                                <h3>Keep your momentum alive</h3>
+                            </div>
+                        </div>
+                        <div class="streak-card">
+                            <div class="streak-icon">🔥</div>
+                            <div>
+                                <h4 id="streak-current">0 day streak</h4>
+                                <p id="streak-longest">Longest streak: 0 days</p>
+                                <p id="streak-consistency">Weekly consistency: 0%</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </section>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <!-- Modular JavaScript files -->
+        <script src="js/ui.js"></script>
+        <script src="js/timer.js"></script>
+        <script src="js/tasks.js"></script>
+        <script src="js/report.js"></script>
+        <script src="js/heatmap.js"></script>
+        <script src="js/charts.js"></script>
+        <script src="js/main.js"></script>
+    </div>
+</body>
+</html>
